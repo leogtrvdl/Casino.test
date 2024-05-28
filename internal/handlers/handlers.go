@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"Casinotest/config"
+	"Casinotest/models"
 	"bytes"
 	"net/http"
 	"path/filepath"
@@ -8,23 +10,34 @@ import (
 )
 
 func Home(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "home")
+	names := make(map[string]string)
+	names["owner"] = "Léo"
+
+	foo := make(map[string]int)
+	foo["owner"] = 20
+
+	renderTemplate(w, "home", &models.TemplateData{
+		StringData: names,
+		IntData:    foo,
+	})
 }
 
 func Blackjack(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "blackjack")
+	renderTemplate(w, "blackjack", &models.TemplateData{})
 }
 
 func Roulette(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "roulette")
+	renderTemplate(w, "roulette", &models.TemplateData{})
 }
 
-func renderTemplate(w http.ResponseWriter, tmplName string) {
-	templateCache, err := createTemplateCache()
+var appConfig *config.Config
 
-	if err != nil {
-		panic(err)
-	}
+func CreateTemplates(app *config.Config) {
+	appConfig = app
+}
+
+func renderTemplate(w http.ResponseWriter, tmplName string, td *models.TemplateData) {
+	templateCache := appConfig.TemplateCache
 
 	tmpl, ok := templateCache[tmplName+".page.tmpl"]
 
@@ -34,11 +47,11 @@ func renderTemplate(w http.ResponseWriter, tmplName string) {
 	}
 
 	buffer := new(bytes.Buffer)
-	tmpl.Execute(buffer, nil)
+	tmpl.Execute(buffer, td)
 	buffer.WriteTo(w)
 }
 
-func createTemplateCache() (map[string]*template.Template, error) {
+func CreateTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 	pages, err := filepath.Glob("./templates/*.page.tmpl")
 
