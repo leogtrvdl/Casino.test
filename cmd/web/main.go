@@ -34,10 +34,6 @@ type Game struct {
 	ballVisible   bool
 }
 
-var rouletteNumbers = [37]int{
-	0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
-}
-
 func (g *Game) Update() error {
 	if g.state == Menu {
 		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
@@ -51,12 +47,14 @@ func (g *Game) Update() error {
 	} else if g.state == Roulette {
 		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 			x, y := ebiten.CursorPosition()
-			if x >= 220 && x <= 320 && y >= 400 && y <= 440 {
+			if x >= 10 && x <= 160 && y >= 75 && y <= 115 {
 				g.isSpinning = true
 				g.ballVisible = true
 				g.rouletteStart = time.Now()
 				g.ballAngle = rand.Float64() * 2 * math.Pi // Random starting angle
 				g.ballRadius = 90.0                        // Set a fixed radius for the ball's path in the outer circle
+			} else if x >= 10 && x <= 160 && y >= 120 && y <= 160 {
+				g.state = Menu
 			}
 		}
 		if g.isSpinning {
@@ -88,6 +86,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) drawMenu(screen *ebiten.Image) {
+	screen.Fill(color.RGBA{155, 255, 155, 255})
+
 	msg := "Choisissez votre jeu : "
 	text.Draw(screen, msg, basicfont.Face7x13, 240, 200, color.Black)
 
@@ -118,6 +118,7 @@ func (g *Game) drawRoulette(screen *ebiten.Image) {
 	additionalTranslationY := float64(screen.Bounds().Dy()) / 6
 	op.GeoM.Translate(float64(screen.Bounds().Dx())/2+additionalTranslationX, float64(screen.Bounds().Dy())/2-additionalTranslationY)
 
+	screen.Fill(color.RGBA{155, 255, 155, 255})
 	screen.DrawImage(g.img, op)
 
 	// Draw ball
@@ -135,8 +136,12 @@ func (g *Game) drawRoulette(screen *ebiten.Image) {
 	}
 
 	// Draw button
-	ebitenutil.DrawRect(screen, 220, 400, 100, 40, color.RGBA{170, 170, 170, 255})
-	text.Draw(screen, "Lancer une balle", basicfont.Face7x13, 225, 425, color.Black)
+	ebitenutil.DrawRect(screen, 10, 75, 150, 40, color.RGBA{170, 170, 170, 255})
+	ebitenutil.DrawRect(screen, 10, 120, 150, 40, color.RGBA{170, 170, 170, 255})
+
+	// Draw text
+	text.Draw(screen, "Lancer une balle", basicfont.Face7x13, 20, 100, color.Black)
+	text.Draw(screen, "Retour au menu", basicfont.Face7x13, 20, 145, color.Black)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
