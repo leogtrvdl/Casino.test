@@ -11,10 +11,10 @@ type Card struct {
 	symbol string
 }
 
-type numbersRoue struct {
-	value int
-	color string
-	tier  int
-	ligne int
-	demi  int
+type NumbersRoue struct {
+	Value int
+	Color string
+	Tier  int
+	Ligne int
+	Demi  int
 }

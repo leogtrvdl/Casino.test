@@ -6,18 +6,23 @@ import (
 	"time"
 )
 
-func PlayRoulette() {
-	numRoulette()
+func PlayRoulette() NumbersRoue {
+	rand.Seed(time.Now().UnixNano())
+	numeros := roue()
+	randomIndex := rand.Intn(len(numeros))
+	numero := numeros[randomIndex]
+	fmt.Printf("value: %d, color: %s, tier: %d, ligne: %d, demi: %d\n", numero.Value, numero.Color, numero.Tier, numero.Ligne, numero.Demi)
+	return numero
 }
 
-func roue() []numbersRoue {
+func roue() []NumbersRoue {
 	values := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36}
 
 	colors := []string{"red", "black", "green"}
 
 	tiers := []int{1, 2, 3}
 
-	var numRoulette []numbersRoue
+	var numRoulette []NumbersRoue
 
 	for _, value := range values {
 
@@ -58,16 +63,8 @@ func roue() []numbersRoue {
 			demi = 2
 		}
 
-		roue := numbersRoue{value, color, tier, ligne, demi}
+		roue := NumbersRoue{value, color, tier, ligne, demi}
 		numRoulette = append(numRoulette, roue)
 	}
 	return numRoulette
-}
-
-func numRoulette() {
-	rand.Seed(time.Now().UnixNano())
-	numeros := roue()
-	randomIndex := rand.Intn(len(numeros))
-	numero := numeros[randomIndex]
-	fmt.Printf("Numéro: %d, Couleur: %s, Tier: %d, Ligne: %d, Demi: %d\n", numero.value, numero.color, numero.tier, numero.ligne, numero.demi)
 }
