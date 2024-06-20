@@ -16,7 +16,7 @@ func NewPlayer(Number int, Name string) Player {
 }
 
 // On crée le jeu de carte
-func createDeck() []Card {
+func CreateDeck() []Card {
 	symbols := []string{"Coeur", "Trèfle", "Carreau", "Pique"}
 	values := []string{"As", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf", "Dix", "Valet", "Dame", "Roi"}
 
@@ -33,13 +33,13 @@ func createDeck() []Card {
 }
 
 // On mélange les cartes du jeu
-func shuffle(deck []Card) {
+func Shuffle(deck []Card) {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(deck), func(i, j int) { deck[i], deck[j] = deck[j], deck[i] })
 }
 
 // Fonction pour donner une carte aléatoire à un joueur
-func giveRandomCard(player *Player, deck *[]Card) {
+func GiveRandomCard(player *Player, deck *[]Card) {
 	if len(*deck) == 0 {
 		fmt.Println("Pas assez de cartes dans le jeu.")
 		return
@@ -66,7 +66,7 @@ func (p Player) PrintDetails() {
 }
 
 // Calcul de la valeur de la main du joueur
-func calculateHand(hand []Card) int {
+func CalculateHand(hand []Card) int {
 	total := 0
 
 	for _, card := range hand {

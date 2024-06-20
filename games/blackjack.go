@@ -2,34 +2,10 @@ package games
 
 import (
 	"fmt"
+	"strconv"
 )
 
 func PlayBlackjack() {
-	println("Au blackjack, la valeur total de votre main ne dois pas dépacer 21\nLà personne qui a la main la plus forte gagne")
-
-	// Création des joueurs
-	joueurs := []Player{
-		NewPlayer(1, "1st"),
-		NewPlayer(2, "2nd"),
-	}
-
-	croupier := NewPlayer(0, "Croupier")
-
-	//initialisation et mélange du deck
-	deck := createDeck()
-	shuffle(deck)
-
-	//On donne les cartes aux joueurs
-	for i := 0; i < 2; i++ {
-		for j := range joueurs {
-			giveRandomCard(&joueurs[j], &deck)
-		}
-	}
-
-	//On donne les cartes au croupier
-	for i := 0; i < 2; i++ {
-		giveRandomCard(&croupier, &deck)
-	}
 
 	//On commence le jeu
 
@@ -43,7 +19,7 @@ func PlayBlackjack() {
 	for i := range joueurs {
 		for {
 			joueurs[i].PrintDetails()
-			total := calculateHand(joueurs[i].hand)
+			total := CalculateHand(joueurs[i].hand)
 			fmt.Printf("Total des points : %d\n", total)
 
 			if total >= 21 {
@@ -55,7 +31,7 @@ func PlayBlackjack() {
 			fmt.Scanln(&action)
 
 			if action == "oui" {
-				giveRandomCard(&joueurs[i], &deck)
+				GiveRandomCard(&joueurs[i], &deck)
 			} else {
 				break
 			}
@@ -63,8 +39,8 @@ func PlayBlackjack() {
 	}
 
 	//Tour du croupier
-	for calculateHand(croupier.hand) < 17 {
-		giveRandomCard(&croupier, &deck)
+	for CalculateHand(croupier.hand) < 17 {
+		GiveRandomCard(&croupier, &deck)
 	}
 
 	//Afficher a nouveau la main du croupier
@@ -74,9 +50,9 @@ func PlayBlackjack() {
 	}
 
 	//Comparaison des mains pour déclarer les gagnants
-	croupierTotal := calculateHand(croupier.hand)
+	croupierTotal := CalculateHand(croupier.hand)
 	for _, joueur := range joueurs {
-		joueurTotal := calculateHand(joueur.hand)
+		joueurTotal := CalculateHand(joueur.hand)
 		if (joueurTotal > croupierTotal) && (joueurTotal <= 21) || (croupierTotal > 21) {
 			fmt.Printf("Le joueur %s a la main la plus forte!\n", joueur.name)
 			fmt.Printf("La valeur de la main du croupier est: %d\n", croupierTotal)
@@ -85,4 +61,22 @@ func PlayBlackjack() {
 			fmt.Printf("La valeur de la main du croupier est: %d\n", croupierTotal)
 		}
 	}
+}
+
+func intToString(number int) string {
+	return strconv.Itoa(number)
+}
+
+func CreatePlayers(n int) []Player {
+	var joueurs []Player
+	for i := 1; i <= n; i++ {
+		joueur := NewPlayer(i, "Joueur n°"+intToString(i))
+		joueurs = append(joueurs, joueur)
+	}
+	return joueurs
+}
+
+func CreateCroupier() Player {
+	croupier := NewPlayer(0, "Croupier")
+	return croupier
 }
