@@ -1,14 +1,14 @@
 package games
 
 type Player struct {
-	number int
-	name   string
-	hand   []Card
+	Number int
+	Name   string
+	Hand   []Card
 }
 
 type Card struct {
-	value  string
-	symbol string
+	Value  string
+	Symbol string
 }
 
 type NumbersRoue struct {

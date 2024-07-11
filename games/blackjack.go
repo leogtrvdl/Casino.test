@@ -1,7 +1,6 @@
 package games
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -10,7 +9,7 @@ func PlayBlackjack() {
 	//On commence le jeu
 
 	//Affichage de la main du croupier
-	fmt.Println("Main du croupier:")
+	/*fmt.Println("Main du croupier:")
 	for _, card := range croupier.hand {
 		fmt.Printf(" - %s de %s\n", card.value, card.symbol)
 	}
@@ -60,7 +59,7 @@ func PlayBlackjack() {
 			fmt.Printf("Le croupier avait une main plus forte que le joueur %s!\n", joueur.name)
 			fmt.Printf("La valeur de la main du croupier est: %d\n", croupierTotal)
 		}
-	}
+	}*/
 }
 
 func intToString(number int) string {

@@ -31,11 +31,51 @@ const (
 )
 
 type Game struct {
+	//images
 	img              *ebiten.Image
 	ballImg          *ebiten.Image
 	rouletteTableImg *ebiten.Image
 	background       *ebiten.Image
 	dosCartes        *ebiten.Image
+	piqueAs          *ebiten.Image
+	piqueDeux        *ebiten.Image
+	piqueTrois       *ebiten.Image
+	piqueQuatre      *ebiten.Image
+	piqueCinq        *ebiten.Image
+	piqueSix         *ebiten.Image
+	piqueSept        *ebiten.Image
+	piqueHuit        *ebiten.Image
+	piqueNeuf        *ebiten.Image
+	piqueDix         *ebiten.Image
+	piqueValet       *ebiten.Image
+	piqueDame        *ebiten.Image
+	piqueRoi         *ebiten.Image
+	carreauAs        *ebiten.Image
+	carreauDeux      *ebiten.Image
+	carreauTrois     *ebiten.Image
+	carreauQuatre    *ebiten.Image
+	carreauCinq      *ebiten.Image
+	carreauSix       *ebiten.Image
+	carreauSept      *ebiten.Image
+	carreauHuit      *ebiten.Image
+	carreauNeuf      *ebiten.Image
+	carreauDix       *ebiten.Image
+	carreauValet     *ebiten.Image
+	carreauDame      *ebiten.Image
+	carreauRoi       *ebiten.Image
+	coeurAs          *ebiten.Image
+	coeurDeux        *ebiten.Image
+	coeurTrois       *ebiten.Image
+	coeurQuatre      *ebiten.Image
+	coeurCinq        *ebiten.Image
+	coeurSix         *ebiten.Image
+	coeurSept        *ebiten.Image
+	coeurHuit        *ebiten.Image
+	coeurNeuf        *ebiten.Image
+	coeurDix         *ebiten.Image
+	coeurValet       *ebiten.Image
+	coeurDame        *ebiten.Image
+	coeurRoi         *ebiten.Image
 	trefleAs         *ebiten.Image
 	trefleDeux       *ebiten.Image
 	trefleTrois      *ebiten.Image
@@ -47,8 +87,12 @@ type Game struct {
 	trefleNeuf       *ebiten.Image
 	trefleDix        *ebiten.Image
 	trefleValet      *ebiten.Image
-	trefleReine      *ebiten.Image
+	trefleDame       *ebiten.Image
 	trefleRoi        *ebiten.Image
+	cardToShow       *ebiten.Image
+	CardImage        map[string]*ebiten.Image
+
+	//pas images
 	angle            float64
 	ballAngle        float64
 	ballRadius       float64
@@ -64,13 +108,16 @@ type Game struct {
 	roulTier         int
 	roulLigne        int
 	roulDemi         int
-	playerHand       []games.Card
-	dealerHand       []games.Card
 	blackjackStart   bool
 	isPlayerSelected bool
+	isPlayersTurn    bool
 	playerNumber     int
+	symbolBj         string
+	valueBj          string
+	croupier         games.Player
 	players          []games.Player
-	currentPlayer    int
+	croupierHand     string
+	playersHand      []string
 }
 
 func (g *Game) Update() error {
@@ -282,19 +329,32 @@ func (g *Game) Update() error {
 				g.playerNumber = 5
 				g.isPlayerSelected = true
 			}
-			if g.isPlayerSelected {
-				//création + mélange des cartes
-				deck := games.CreateDeck()
-				games.Shuffle(deck)
+			if g.isPlayerSelected && g.blackjackStart {
+				//creation du deck de jeu
+				cards := games.CreateDeck()
+				games.Shuffle(cards)
+
 				//creation des joueurs
-				joueurs := games.CreatePlayers(g.playerNumber)
-				croupier := games.CreateCroupier()
-				//on donne une carte a chaque joueur
-				for j := range g.playerNumber {
-					games.GiveRandomCard(&joueurs[j], &deck)
+				g.croupier = games.CreateCroupier()
+				g.players = games.CreatePlayers(g.playerNumber)
+
+				//attribution de cartes aux joueurs
+				for j := 0; j < 2; j++ {
+					games.GiveRandomCard(&g.croupier, &cards)
 				}
-				for i := 0; i < 2; i++ {
-					games.GiveRandomCard(&croupier, &deck)
+				for i := range g.players {
+					games.GiveRandomCard(&g.players[i], &cards)
+				}
+
+				//Indiquer au jeu que les cartes ont été données
+				g.isPlayersTurn = true
+
+				// Obtenir la main du croupier sous forme de chaîne
+				g.croupierHand = g.croupier.GetCroupierHand()
+
+				// Obtenir les mains des joueurs sous forme de chaîne
+				for _, player := range g.players {
+					g.playersHand = append(g.playersHand, player.GetHand())
 				}
 			}
 		}
@@ -371,8 +431,17 @@ func (g *Game) drawBlackjack(screen *ebiten.Image) {
 		g.drawOption(screen, "5. Player ", 200, 280, true, false)
 	}
 	if g.blackjackStart && g.isPlayerSelected {
+
 		g.drawOption(screen, "Tirer une carte", 20, 250, true, false)
 		g.drawOption(screen, "Passer", 160, 250, true, false)
+		g.drawOption(screen, "Nombre de joueurs : ", 40, 200, false, false)
+		g.drawOption(screen, intToString(g.playerNumber), 180, 200, false, false)
+	}
+
+	if g.isPlayersTurn && g.blackjackStart {
+		g.drawOption(screen, g.playersHand[0], 20, 300, false, false)
+		g.drawOption(screen, g.playersHand[1], 20, 350, false, false)
+		g.drawOption(screen, g.croupierHand, 20, 400, false, false)
 	}
 }
 
@@ -409,7 +478,7 @@ func (g *Game) drawRoulette(screen *ebiten.Image) {
 
 	// Draw gambling table
 	ballOp := &ebiten.DrawImageOptions{}
-	ballOp.GeoM.Translate(225, 270)
+	ballOp.GeoM.Translate(175, 270)
 	screen.DrawImage(g.rouletteTableImg, ballOp)
 
 	// Draw options with hover effects
@@ -431,6 +500,13 @@ func (g *Game) drawRoulette(screen *ebiten.Image) {
 		text.Draw(screen, msgTi, text.FaceWithLineHeight(basicfont.Face7x13, 15), 20, 400, color.RGBA{255, 255, 255, 255})
 		text.Draw(screen, msgLi, text.FaceWithLineHeight(basicfont.Face7x13, 15), 20, 420, color.RGBA{255, 255, 255, 255})
 		text.Draw(screen, msgDe, text.FaceWithLineHeight(basicfont.Face7x13, 15), 20, 440, color.RGBA{255, 255, 255, 255})
+		//ball after
+		ballOp := &ebiten.DrawImageOptions{}
+		ballW, ballH := g.ballImg.Size()
+		ballOp.GeoM.Translate(-float64(ballW)/2, -float64(ballH)/2)
+
+		ballOp.GeoM.Translate(g.ballX, g.ballY)
+		screen.DrawImage(g.ballImg, ballOp)
 	}
 }
 
@@ -508,7 +584,7 @@ func setImg() {
 		os.Exit(1)
 	}
 
-	/*dosCartes, _, err := ebitenutil.NewImageFromFile("assets/cartes/dos_cartes.png")
+	dosCartes, _, err := ebitenutil.NewImageFromFile("assets/cartes/dos_cartes.png")
 	if err != nil {
 		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
 		os.Exit(1)
@@ -580,7 +656,7 @@ func setImg() {
 		os.Exit(1)
 	}
 
-	trefleReine, _, err := ebitenutil.NewImageFromFile("assets/cartes/trefle/dame.png")
+	trefleDame, _, err := ebitenutil.NewImageFromFile("assets/cartes/trefle/dame.png")
 	if err != nil {
 		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
 		os.Exit(1)
@@ -590,7 +666,312 @@ func setImg() {
 	if err != nil {
 		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
 		os.Exit(1)
-	}*/
+	}
+
+	piqueAs, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/as.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueDeux, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/deux.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueTrois, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/trois.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueQuatre, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/quatre.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueCinq, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/cinq.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueSix, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/six.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueSept, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/sept.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueHuit, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/huit.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueNeuf, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/neuf.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueDix, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/dix.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueValet, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/valet.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueDame, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/dame.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	piqueRoi, _, err := ebitenutil.NewImageFromFile("assets/cartes/pique/roi.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauAs, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/as.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauDeux, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/deux.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauTrois, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/trois.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauQuatre, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/quatre.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauCinq, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/cinq.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauSix, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/six.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauSept, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/sept.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauHuit, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/huit.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauNeuf, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/neuf.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauDix, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/dix.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauValet, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/valet.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauDame, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/dame.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	carreauRoi, _, err := ebitenutil.NewImageFromFile("assets/cartes/carreau/roi.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurAs, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/as.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurDeux, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/deux.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurTrois, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/trois.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurQuatre, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/quatre.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurCinq, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/cinq.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurSix, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/six.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurSept, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/sept.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurHuit, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/huit.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurNeuf, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/neuf.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurDix, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/dix.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurValet, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/valet.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurDame, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/dame.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	coeurRoi, _, err := ebitenutil.NewImageFromFile("assets/cartes/coeur/roi.png")
+	if err != nil {
+		log.Fatalf("Erreur lors du chargement de l'image : %v", err)
+		os.Exit(1)
+	}
+
+	CardImage := make(map[string]*ebiten.Image)
+
+	addCardImage := func(path, name string) {
+		img, _, err := ebitenutil.NewImageFromFile(path)
+		if err != nil {
+			log.Fatalf("Erreur lors du chargement de l'image %s : %v", name, err)
+			os.Exit(1)
+		}
+		CardImage[name] = img
+	}
+
+	//trefles
+	addCardImage("assets/cartes/trefle/as.png", "trefle_as")
+	addCardImage("assets/cartes/trefle/deux.png", "trefle_deux")
+	addCardImage("assets/cartes/trefle/trois.png", "trefle_trois")
+	addCardImage("assets/cartes/trefle/quatre.png", "trefle_quatre")
+	addCardImage("assets/cartes/trefle/cinq.png", "trefle_cinq")
+	addCardImage("assets/cartes/trefle/six.png", "trefle_six")
+	addCardImage("assets/cartes/trefle/sept.png", "trefle_sept")
+	addCardImage("assets/cartes/trefle/huit.png", "trefle_huit")
+	addCardImage("assets/cartes/trefle/neuf.png", "trefle_neuf")
+	addCardImage("assets/cartes/trefle/dix.png", "trefle_dix")
+	addCardImage("assets/cartes/trefle/valet.png", "trefle_valet")
+	addCardImage("assets/cartes/trefle/dame.png", "trefle_dame")
+	addCardImage("assets/cartes/trefle/roi.png", "trefle_roi")
+
+	//pique
+	addCardImage("assets/cartes/pique/as.png", "pique_as")
+	addCardImage("assets/cartes/pique/deux.png", "pique_deux")
+	addCardImage("assets/cartes/pique/trois.png", "pique_trois")
+	addCardImage("assets/cartes/pique/quatre.png", "pique_quatre")
+	addCardImage("assets/cartes/pique/cinq.png", "pique_cinq")
+	addCardImage("assets/cartes/pique/six.png", "pique_six")
+	addCardImage("assets/cartes/pique/sept.png", "pique_sept")
+	addCardImage("assets/cartes/pique/huit.png", "pique_huit")
+	addCardImage("assets/cartes/pique/neuf.png", "pique_neuf")
+	addCardImage("assets/cartes/pique/dix.png", "pique_dix")
+	addCardImage("assets/cartes/pique/valet.png", "pique_valet")
+	addCardImage("assets/cartes/pique/dame.png", "pique_dame")
+	addCardImage("assets/cartes/pique/roi.png", "pique_roi")
+
+	//carreau
+	addCardImage("assets/cartes/carreau/as.png", "carreau_as")
+	addCardImage("assets/cartes/carreau/deux.png", "carreau_deux")
+	addCardImage("assets/cartes/carreau/trois.png", "carreau_trois")
+	addCardImage("assets/cartes/carreau/quatre.png", "carreau_quatre")
+	addCardImage("assets/cartes/carreau/cinq.png", "carreau_cinq")
+	addCardImage("assets/cartes/carreau/six.png", "carreau_six")
+	addCardImage("assets/cartes/carreau/sept.png", "carreau_sept")
+	addCardImage("assets/cartes/carreau/huit.png", "carreau_huit")
+	addCardImage("assets/cartes/carreau/neuf.png", "carreau_neuf")
+	addCardImage("assets/cartes/carreau/dix.png", "carreau_dix")
+	addCardImage("assets/cartes/carreau/valet.png", "carreau_valet")
+	addCardImage("assets/cartes/carreau/dame.png", "carreau_dame")
+	addCardImage("assets/cartes/carreau/roi.png", "carreau_roi")
+
+	//coeur
+	addCardImage("assets/cartes/coeur/as.png", "coeur_as")
+	addCardImage("assets/cartes/coeur/deux.png", "coeur_deux")
+	addCardImage("assets/cartes/coeur/trois.png", "coeur_trois")
+	addCardImage("assets/cartes/coeur/quatre.png", "coeur_quatre")
+	addCardImage("assets/cartes/coeur/cinq.png", "coeur_cinq")
+	addCardImage("assets/cartes/coeur/six.png", "coeur_six")
+	addCardImage("assets/cartes/coeur/sept.png", "coeur_sept")
+	addCardImage("assets/cartes/coeur/huit.png", "coeur_huit")
+	addCardImage("assets/cartes/coeur/neuf.png", "coeur_neuf")
+	addCardImage("assets/cartes/coeur/dix.png", "coeur_dix")
+	addCardImage("assets/cartes/coeur/valet.png", "coeur_valet")
+	addCardImage("assets/cartes/coeur/dame.png", "coeur_dame")
+	addCardImage("assets/cartes/coeur/roi.png", "coeur_roi")
 
 	game := &Game{
 		img:              img,
@@ -598,7 +979,7 @@ func setImg() {
 		rouletteTableImg: rouletteTableImg,
 		state:            Menu,
 		background:       background,
-		/*dosCartes:        dosCartes,
+		dosCartes:        dosCartes,
 		trefleAs:         trefleAs,
 		trefleDeux:       trefleDeux,
 		trefleTrois:      trefleTrois,
@@ -610,8 +991,47 @@ func setImg() {
 		trefleNeuf:       trefleNeuf,
 		trefleDix:        trefleDix,
 		trefleValet:      trefleValet,
-		trefleReine:      trefleReine,
-		trefleRoi:        trefleRoi,*/
+		trefleDame:       trefleDame,
+		trefleRoi:        trefleRoi,
+		piqueAs:          piqueAs,
+		piqueDeux:        piqueDeux,
+		piqueTrois:       piqueTrois,
+		piqueQuatre:      piqueQuatre,
+		piqueCinq:        piqueCinq,
+		piqueSix:         piqueSix,
+		piqueSept:        piqueSept,
+		piqueHuit:        piqueHuit,
+		piqueNeuf:        piqueNeuf,
+		piqueDix:         piqueDix,
+		piqueValet:       piqueValet,
+		piqueDame:        piqueDame,
+		piqueRoi:         piqueRoi,
+		carreauAs:        carreauAs,
+		carreauDeux:      carreauDeux,
+		carreauTrois:     carreauTrois,
+		carreauQuatre:    carreauQuatre,
+		carreauCinq:      carreauCinq,
+		carreauSix:       carreauSix,
+		carreauSept:      carreauSept,
+		carreauHuit:      carreauHuit,
+		carreauNeuf:      carreauNeuf,
+		carreauDix:       carreauDix,
+		carreauValet:     carreauValet,
+		carreauDame:      carreauDame,
+		carreauRoi:       carreauRoi,
+		coeurAs:          coeurAs,
+		coeurDeux:        coeurDeux,
+		coeurTrois:       coeurTrois,
+		coeurQuatre:      coeurQuatre,
+		coeurCinq:        coeurCinq,
+		coeurSix:         coeurSix,
+		coeurSept:        coeurSept,
+		coeurHuit:        coeurHuit,
+		coeurNeuf:        coeurNeuf,
+		coeurDix:         coeurDix,
+		coeurValet:       coeurValet,
+		coeurDame:        coeurDame,
+		coeurRoi:         coeurRoi,
 	}
 
 	if err := ebiten.RunGame(game); err != nil {
