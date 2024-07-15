@@ -2,6 +2,7 @@ package main
 
 import (
 	"Casinotest/games"
+	"fmt"
 	"image/color"
 	"log"
 	"math"
@@ -89,8 +90,6 @@ type Game struct {
 	trefleValet      *ebiten.Image
 	trefleDame       *ebiten.Image
 	trefleRoi        *ebiten.Image
-	cardToShow       *ebiten.Image
-	CardImage        map[string]*ebiten.Image
 
 	//pas images
 	angle            float64
@@ -118,6 +117,10 @@ type Game struct {
 	players          []games.Player
 	croupierHand     string
 	playersHand      []string
+	cardToShow       string
+	cardsToShow      []string
+	currentPlayer    int
+	cards            []games.Card
 }
 
 func (g *Game) Update() error {
@@ -328,26 +331,39 @@ func (g *Game) Update() error {
 			case g.blackjackStart && x >= 200 && x <= 300 && y >= 275 && y <= 295:
 				g.playerNumber = 5
 				g.isPlayerSelected = true
+			case x >= 20 && x <= 120 && y >= 240 && y < 255: //tirer une carte
+				games.GiveRandomCard(&g.players[g.currentPlayer], &g.cards)
+				g.playersHand[g.currentPlayer] = g.players[g.currentPlayer].GetHand()
+			case x >= 160 && x <= 260 && y >= 240 && y < 255: //passer
+				if g.currentPlayer < g.playerNumber {
+					g.currentPlayer++
+				} else if g.currentPlayer >= g.playerNumber {
+					g.currentPlayer = 0
+				}
+
 			}
-			if g.isPlayerSelected && g.blackjackStart {
+			if g.isPlayerSelected && g.blackjackStart && !g.isPlayersTurn {
 				//creation du deck de jeu
-				cards := games.CreateDeck()
-				games.Shuffle(cards)
+				g.cards = games.CreateDeck()
+				games.Shuffle(g.cards)
 
 				//creation des joueurs
 				g.croupier = games.CreateCroupier()
 				g.players = games.CreatePlayers(g.playerNumber)
+				g.currentPlayer = 0
 
 				//attribution de cartes aux joueurs
 				for j := 0; j < 2; j++ {
-					games.GiveRandomCard(&g.croupier, &cards)
+					games.GiveRandomCard(&g.croupier, &g.cards)
 				}
 				for i := range g.players {
-					games.GiveRandomCard(&g.players[i], &cards)
+					games.GiveRandomCard(&g.players[i], &g.cards)
 				}
 
 				//Indiquer au jeu que les cartes ont été données
 				g.isPlayersTurn = true
+
+				g.currentPlayer = 0
 
 				// Obtenir la main du croupier sous forme de chaîne
 				g.croupierHand = g.croupier.GetCroupierHand()
@@ -434,14 +450,245 @@ func (g *Game) drawBlackjack(screen *ebiten.Image) {
 
 		g.drawOption(screen, "Tirer une carte", 20, 250, true, false)
 		g.drawOption(screen, "Passer", 160, 250, true, false)
-		g.drawOption(screen, "Nombre de joueurs : ", 40, 200, false, false)
-		g.drawOption(screen, intToString(g.playerNumber), 180, 200, false, false)
+		g.drawOption(screen, "tour du joueur ", 40, 200, false, false)
+		g.drawOption(screen, intToString(g.currentPlayer+1), 180, 200, false, false)
+
 	}
 
-	if g.isPlayersTurn && g.blackjackStart {
-		g.drawOption(screen, g.playersHand[0], 20, 300, false, false)
-		g.drawOption(screen, g.playersHand[1], 20, 350, false, false)
-		g.drawOption(screen, g.croupierHand, 20, 400, false, false)
+	if g.isPlayersTurn && g.blackjackStart && !(g.currentPlayer >= g.playerNumber) {
+		cards, err := games.ExtractCardValues(g.croupierHand)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		xPosition := 250.0 // Position de départ pour l'affichage des cartes
+		yPosition := 20.0
+		spacingX := 25.0 // Espacement entre les cartes
+		spacingY := 10.0
+		scale := 0.8
+
+		for _, card := range cards {
+			cardName := fmt.Sprintf("%s%s", card.Symbol, games.CapitalizeFirstLetter(card.Value))
+			g.drawCard(screen, cardName, xPosition, yPosition, scale)
+			xPosition += spacingX // Ajustez l'espace entre les cartes si nécessaire
+			yPosition += spacingY
+		}
+
+		switch g.currentPlayer {
+		case 0:
+			playerCards, err := games.ExtractCardValues(g.playersHand[0])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			xPosition := 20.0 // Position de départ pour l'affichage des cartes
+			yPosition := 300.0
+			spacingX := 25.0 // Espacement entre les cartes
+			spacingY := 10.0
+			scale := 0.8
+
+			for _, card := range playerCards {
+				cardName := fmt.Sprintf("%s%s", card.Symbol, games.CapitalizeFirstLetter(card.Value))
+				g.drawCard(screen, cardName, xPosition, yPosition, scale)
+				xPosition += spacingX // Ajustez l'espace entre les cartes si nécessaire
+				yPosition += spacingY
+			}
+		case 1:
+			playerCards, err := games.ExtractCardValues(g.playersHand[1])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			xPosition := 20.0 // Position de départ pour l'affichage des cartes
+			yPosition := 300.0
+			spacingX := 25.0 // Espacement entre les cartes
+			spacingY := 10.0
+			scale := 0.8
+
+			for _, card := range playerCards {
+				cardName := fmt.Sprintf("%s%s", card.Symbol, games.CapitalizeFirstLetter(card.Value))
+				g.drawCard(screen, cardName, xPosition, yPosition, scale)
+				xPosition += spacingX // Ajustez l'espace entre les cartes si nécessaire
+				yPosition += spacingY
+			}
+		case 2:
+			playerCards, err := games.ExtractCardValues(g.playersHand[2])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			xPosition := 20.0 // Position de départ pour l'affichage des cartes
+			yPosition := 300.0
+			spacingX := 25.0 // Espacement entre les cartes
+			spacingY := 10.0
+			scale := 0.8
+
+			for _, card := range playerCards {
+				cardName := fmt.Sprintf("%s%s", card.Symbol, games.CapitalizeFirstLetter(card.Value))
+				g.drawCard(screen, cardName, xPosition, yPosition, scale)
+				xPosition += spacingX // Ajustez l'espace entre les cartes si nécessaire
+				yPosition += spacingY
+			}
+		case 3:
+			playerCards, err := games.ExtractCardValues(g.playersHand[3])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			xPosition := 20.0 // Position de départ pour l'affichage des cartes
+			yPosition := 300.0
+			spacingX := 25.0 // Espacement entre les cartes
+			spacingY := 10.0
+			scale := 0.8
+
+			for _, card := range playerCards {
+				cardName := fmt.Sprintf("%s%s", card.Symbol, games.CapitalizeFirstLetter(card.Value))
+				g.drawCard(screen, cardName, xPosition, yPosition, scale)
+				xPosition += spacingX // Ajustez l'espace entre les cartes si nécessaire
+				yPosition += spacingY
+			}
+		case 4:
+			playerCards, err := games.ExtractCardValues(g.playersHand[4])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+
+			xPosition := 20.0 // Position de départ pour l'affichage des cartes
+			yPosition := 300.0
+			spacingX := 25.0 // Espacement entre les cartes
+			spacingY := 10.0
+			scale := 0.8
+
+			for _, card := range playerCards {
+				cardName := fmt.Sprintf("%s%s", card.Symbol, games.CapitalizeFirstLetter(card.Value))
+				g.drawCard(screen, cardName, xPosition, yPosition, scale)
+				xPosition += spacingX // Ajustez l'espace entre les cartes si nécessaire
+				yPosition += spacingY
+			}
+		}
+	}
+}
+
+func (g *Game) drawCard(screen *ebiten.Image, cardName string, x, y, scale float64) {
+	cartePos := &ebiten.DrawImageOptions{}
+	cartePos.GeoM.Scale(scale, scale) // Mise à l'échelle de la carte
+	cartePos.GeoM.Translate(x, y)
+
+	switch cardName {
+	// Pique
+	case "piqueAs":
+		screen.DrawImage(g.piqueAs, cartePos)
+	case "piqueDeux":
+		screen.DrawImage(g.piqueDeux, cartePos)
+	case "piqueTrois":
+		screen.DrawImage(g.piqueTrois, cartePos)
+	case "piqueQuatre":
+		screen.DrawImage(g.piqueQuatre, cartePos)
+	case "piqueCinq":
+		screen.DrawImage(g.piqueCinq, cartePos)
+	case "piqueSix":
+		screen.DrawImage(g.piqueSix, cartePos)
+	case "piqueSept":
+		screen.DrawImage(g.piqueSept, cartePos)
+	case "piqueHuit":
+		screen.DrawImage(g.piqueHuit, cartePos)
+	case "piqueNeuf":
+		screen.DrawImage(g.piqueNeuf, cartePos)
+	case "piqueDix":
+		screen.DrawImage(g.piqueDix, cartePos)
+	case "piqueValet":
+		screen.DrawImage(g.piqueValet, cartePos)
+	case "piqueDame":
+		screen.DrawImage(g.piqueDame, cartePos)
+	case "piqueRoi":
+		screen.DrawImage(g.piqueRoi, cartePos)
+	// Carreau
+	case "carreauAs":
+		screen.DrawImage(g.carreauAs, cartePos)
+	case "carreauDeux":
+		screen.DrawImage(g.carreauDeux, cartePos)
+	case "carreauTrois":
+		screen.DrawImage(g.carreauTrois, cartePos)
+	case "carreauQuatre":
+		screen.DrawImage(g.carreauQuatre, cartePos)
+	case "carreauCinq":
+		screen.DrawImage(g.carreauCinq, cartePos)
+	case "carreauSix":
+		screen.DrawImage(g.carreauSix, cartePos)
+	case "carreauSept":
+		screen.DrawImage(g.carreauSept, cartePos)
+	case "carreauHuit":
+		screen.DrawImage(g.carreauHuit, cartePos)
+	case "carreauNeuf":
+		screen.DrawImage(g.carreauNeuf, cartePos)
+	case "carreauDix":
+		screen.DrawImage(g.carreauDix, cartePos)
+	case "carreauValet":
+		screen.DrawImage(g.carreauValet, cartePos)
+	case "carreauDame":
+		screen.DrawImage(g.carreauDame, cartePos)
+	case "carreauRoi":
+		screen.DrawImage(g.carreauRoi, cartePos)
+	// Coeur
+	case "coeurAs":
+		screen.DrawImage(g.coeurAs, cartePos)
+	case "coeurDeux":
+		screen.DrawImage(g.coeurDeux, cartePos)
+	case "coeurTrois":
+		screen.DrawImage(g.coeurTrois, cartePos)
+	case "coeurQuatre":
+		screen.DrawImage(g.coeurQuatre, cartePos)
+	case "coeurCinq":
+		screen.DrawImage(g.coeurCinq, cartePos)
+	case "coeurSix":
+		screen.DrawImage(g.coeurSix, cartePos)
+	case "coeurSept":
+		screen.DrawImage(g.coeurSept, cartePos)
+	case "coeurHuit":
+		screen.DrawImage(g.coeurHuit, cartePos)
+	case "coeurNeuf":
+		screen.DrawImage(g.coeurNeuf, cartePos)
+	case "coeurDix":
+		screen.DrawImage(g.coeurDix, cartePos)
+	case "coeurValet":
+		screen.DrawImage(g.coeurValet, cartePos)
+	case "coeurDame":
+		screen.DrawImage(g.coeurDame, cartePos)
+	case "coeurRoi":
+		screen.DrawImage(g.coeurRoi, cartePos)
+	// Trèfle
+	case "trefleAs":
+		screen.DrawImage(g.trefleAs, cartePos)
+	case "trefleDeux":
+		screen.DrawImage(g.trefleDeux, cartePos)
+	case "trefleTrois":
+		screen.DrawImage(g.trefleTrois, cartePos)
+	case "trefleQuatre":
+		screen.DrawImage(g.trefleQuatre, cartePos)
+	case "trefleCinq":
+		screen.DrawImage(g.trefleCinq, cartePos)
+	case "trefleSix":
+		screen.DrawImage(g.trefleSix, cartePos)
+	case "trefleSept":
+		screen.DrawImage(g.trefleSept, cartePos)
+	case "trefleHuit":
+		screen.DrawImage(g.trefleHuit, cartePos)
+	case "trefleNeuf":
+		screen.DrawImage(g.trefleNeuf, cartePos)
+	case "trefleDix":
+		screen.DrawImage(g.trefleDix, cartePos)
+	case "trefleValet":
+		screen.DrawImage(g.trefleValet, cartePos)
+	case "trefleDame":
+		screen.DrawImage(g.trefleDame, cartePos)
+	case "trefleRoi":
+		screen.DrawImage(g.trefleRoi, cartePos)
 	}
 }
 

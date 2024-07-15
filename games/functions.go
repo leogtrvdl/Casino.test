@@ -3,7 +3,9 @@ package games
 import (
 	"fmt"
 	"math/rand"
+	"regexp"
 	"time"
+	"unicode"
 )
 
 // creation d'un joueur avec une main vide
@@ -114,4 +116,28 @@ func (p *Player) GetCroupierHand() string {
 		hand += fmt.Sprintf("%s de %s\n", card.Value, card.Symbol)
 	}
 	return hand
+}
+
+// Fonction pour extraire les valeurs des cartes à partir d'une chaîne de caractères
+func ExtractCardValues(handString string) ([]Card, error) {
+	var cards []Card
+	re := regexp.MustCompile(`(?m)^([^\s]+) de ([^\s]+)$`)
+	matches := re.FindAllStringSubmatch(handString, -1)
+	for _, match := range matches {
+		if len(match) == 3 {
+			cards = append(cards, Card{
+				Value:  match[1],
+				Symbol: match[2],
+			})
+		}
+	}
+	return cards, nil
+}
+
+func CapitalizeFirstLetter(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	// Convertir la première rune en majuscule et concaténer avec le reste de la chaîne
+	return string(unicode.ToUpper(rune(s[0]))) + s[1:]
 }
