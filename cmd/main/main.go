@@ -121,6 +121,7 @@ type Game struct {
 	cardsToShow      []string
 	currentPlayer    int
 	cards            []games.Card
+	handValue        int
 }
 
 func (g *Game) Update() error {
@@ -331,15 +332,17 @@ func (g *Game) Update() error {
 			case g.blackjackStart && x >= 200 && x <= 300 && y >= 275 && y <= 295:
 				g.playerNumber = 5
 				g.isPlayerSelected = true
-			case x >= 20 && x <= 120 && y >= 240 && y < 255: //tirer une carte
+			case x >= 20 && x <= 120 && y >= 240 && y < 255:
 				games.GiveRandomCard(&g.players[g.currentPlayer], &g.cards)
 				g.playersHand[g.currentPlayer] = g.players[g.currentPlayer].GetHand()
-			case x >= 160 && x <= 260 && y >= 240 && y < 255: //passer
+				g.handValue = g.players[g.currentPlayer].CalculateHandValue()
+			case x >= 160 && x <= 260 && y >= 240 && y < 255:
 				if g.currentPlayer < g.playerNumber {
 					g.currentPlayer++
 				} else if g.currentPlayer >= g.playerNumber {
 					g.currentPlayer = 0
 				}
+				g.handValue = g.players[g.currentPlayer].CalculateHandValue()
 
 			}
 			if g.isPlayerSelected && g.blackjackStart && !g.isPlayersTurn {
@@ -372,6 +375,7 @@ func (g *Game) Update() error {
 				for _, player := range g.players {
 					g.playersHand = append(g.playersHand, player.GetHand())
 				}
+
 			}
 		}
 	} else {
@@ -452,7 +456,7 @@ func (g *Game) drawBlackjack(screen *ebiten.Image) {
 		g.drawOption(screen, "Passer", 160, 250, true, false)
 		g.drawOption(screen, "tour du joueur ", 40, 200, false, false)
 		g.drawOption(screen, intToString(g.currentPlayer+1), 180, 200, false, false)
-
+		g.drawOption(screen, intToString(g.handValue), 260, 200, false, false)
 	}
 
 	if g.isPlayersTurn && g.blackjackStart && !(g.currentPlayer >= g.playerNumber) {
@@ -474,6 +478,10 @@ func (g *Game) drawBlackjack(screen *ebiten.Image) {
 			xPosition += spacingX // Ajustez l'espace entre les cartes si nécessaire
 			yPosition += spacingY
 		}
+
+		// Afficher la valeur de la main du croupier
+		croupierHandValue := g.croupier.CalculateHandValue()
+		text.Draw(screen, fmt.Sprintf("%d", croupierHandValue), text.FaceWithLineHeight(basicfont.Face7x13, 15), int(xPosition)+100, int(yPosition), color.RGBA{255, 255, 255, 255})
 
 		switch g.currentPlayer {
 		case 0:

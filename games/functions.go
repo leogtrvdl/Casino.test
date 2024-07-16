@@ -68,22 +68,35 @@ func (p Player) PrintDetails() {
 }
 
 // Calcul de la valeur de la main du joueur
-func CalculateHand(hand []Card) int {
-	total := 0
+func (p *Player) CalculateHandValue() int {
+	value := 0
 
-	for _, card := range hand {
+	for _, card := range p.Hand {
 		switch card.Value {
-		case "As":
-			total += 1
-		case "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf", "Dix":
-			total += getNameValue(card.Value)
-		case "Valet", "Dame", "Roi":
-			total += 10
+		case "as":
+			value += 1
+		case "deux":
+			value += 2
+		case "trois":
+			value += 3
+		case "quatre":
+			value += 4
+		case "cinq":
+			value += 5
+		case "six":
+			value += 6
+		case "sept":
+			value += 7
+		case "huit":
+			value += 8
+		case "neuf":
+			value += 9
+		case "dix", "valet", "dame", "roi":
+			value += 10
 		}
-
 	}
 
-	return total
+	return value
 }
 
 // fonction pour passer les valeurs écrites en chiffres
